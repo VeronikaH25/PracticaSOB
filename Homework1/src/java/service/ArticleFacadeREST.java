@@ -12,5 +12,5 @@ package service;
 
 public class ArticleFacadeREST {
 
-    
+    //hola caracola
 }
