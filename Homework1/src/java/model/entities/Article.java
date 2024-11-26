@@ -15,7 +15,8 @@ import java.util.List;
 public class Article {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "article_gen")
+    @SequenceGenerator(name = "article_gen", sequenceName = "ARTICLE_GEN", allocationSize = 1)
     private Long id;
 
     @Column(nullable = false)
