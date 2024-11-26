@@ -4,19 +4,18 @@
  */
 package service;
 
+import model.entities.Article;
+import model.entities.Customer;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.*;
-import model.entities.Article;
-import model.entities.Customer;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import authn.Secured;
 
 import java.util.List;
-import java.util.Date;
-import jakarta.ws.rs.core.GenericEntity;
-import java.net.URI;
 
 
 /**
@@ -34,7 +33,115 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
     private EntityManager em;
 
     public ArticleFacadeREST() {
-        super(Article.class);  // Llamada al constructor de AbstractFacade con Article
+        super(Article.class);
+    }
+
+    // GET /rest/api/v1/article?topic=${topic}&author=${author}
+    @GET
+    @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+    public List<Article> findAll(@QueryParam("topic") List<String> topics, @QueryParam("author") String author) {
+        String queryStr = "SELECT a FROM Article a WHERE 1=1";
+
+        // Añadir filtro por topic
+        if (topics != null && !topics.isEmpty()) {
+            queryStr += " AND a.topics IN :topics";
+        }
+
+        // Añadir filtro por autor
+        if (author != null && !author.isEmpty()) {
+            queryStr += " AND a.authorName = :author";
+        }
+
+        queryStr += " ORDER BY a.views DESC";  // Ordenar por popularidad
+
+        TypedQuery<Article> query = em.createQuery(queryStr, Article.class);
+
+        // Establecer parámetros
+        if (topics != null && !topics.isEmpty()) {
+            query.setParameter("topics", topics);
+        }
+        if (author != null && !author.isEmpty()) {
+            query.setParameter("author", author);
+        }
+
+        return query.getResultList();
+    }
+
+    // GET /rest/api/v1/article/{id}
+    @GET
+    @Path("{id}")
+    @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+    public Response find(@PathParam("id") Long id, @HeaderParam("Authorization") String authorization) {
+        Article article = super.find(id);
+
+        if (article == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        // Si el artículo es privado, se requiere que el usuario esté registrado
+        if (article.getAuthorName().equals("private") && authorization == null) { 
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+
+        // Incrementar las visualizaciones
+        article.setViews(article.getViews() + 1);
+        super.edit(article);  // Guardar el incremento de visualizaciones
+
+        return Response.ok().entity(article).build();
+    }
+
+    // DELETE /rest/api/v1/article/{id}
+    @DELETE
+    @Path("{id}")
+    @Secured
+    public Response remove(@PathParam("id") Long id, @HeaderParam("Authorization") String authorization) {
+        Article article = super.find(id);
+        if (article == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        // Verificar si el usuario autenticado es el autor del artículo
+        // Este es un ejemplo, se debería validar el autor real a través del token de la sesión
+        if (!isAuthorizedToDelete(article, authorization)) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+
+        super.remove(article);
+        return Response.noContent().build();
+    }
+
+    // POST /rest/api/v1/article
+    @POST
+    @Secured
+    @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+    public Response create(Article article, @HeaderParam("Authorization") String authorization) {
+        // Validar que los topics sean válidos y el autor exista
+        if (article.getTopics().size() > 2) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Los artículos pueden tener hasta dos temas").build();
+        }
+
+        // Suponiendo que el nombre del autor debe coincidir con el usuario autenticado
+        // (esto puede necesitar una integración con un sistema de autenticación real)
+        String authenticatedUsername = getAuthenticatedUsername(authorization);
+        if (!authenticatedUsername.equals(article.getAuthorName())) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+
+        // Validar si los tópicos existen en la base de datos
+        // Este es un ejemplo simple, deberías agregar lógica para comprobar los tópicos válidos
+        for (String topic : article.getTopics()) {
+            if (!isValidTopic(topic)) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Tópico no válido: " + topic).build();
+            }
+        }
+
+        // Establecer la fecha de publicación
+        article.setDatePublished(new java.util.Date());
+
+        super.create(article);
+        return Response.status(Response.Status.CREATED).entity(article.getId()).build();
     }
 
     @Override
@@ -42,134 +149,28 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
         return em;
     }
 
-    // GET /rest/api/v1/article?topic=${topic}&author=${author}
-    @GET
-    public Response getArticles(@QueryParam("topic") List<String> topics, 
-                                 @QueryParam("author") String author) {
-        StringBuilder queryStr = new StringBuilder("SELECT a FROM Article a WHERE 1=1");
-
-        // Filtrar por tópico
-        if (topics != null && !topics.isEmpty()) {
-            queryStr.append(" AND a.topics IN :topics");
-        }
-
-        // Filtrar por autor
-        if (author != null && !author.isEmpty()) {
-            queryStr.append(" AND a.authorName = :author");
-        }
-
-        // Ordenar por popularidad
-        queryStr.append(" ORDER BY a.views DESC");
-
-        TypedQuery<Article> query = em.createQuery(queryStr.toString(), Article.class);
-
-        if (topics != null && !topics.isEmpty()) {
-            query.setParameter("topics", topics);
-        }
-
-        if (author != null && !author.isEmpty()) {
-            query.setParameter("author", author);
-        }
-
-        List<Article> articles = query.getResultList();
-        return Response.ok(new GenericEntity<List<Article>>(articles) {}).build();
+    // Método auxiliar para validar si el usuario está autorizado a borrar un artículo
+    private boolean isAuthorizedToDelete(Article article, String authorization) {
+        // Aquí debes validar el token y comparar el autor real con el que está autenticado.
+        // Este es solo un ejemplo simple basado en el nombre del autor
+        return article.getAuthorName().equals(getAuthenticatedUsername(authorization));
     }
 
-    // GET /rest/api/v1/article/${id}
-    @GET
-    @Path("/{id}")
-    public Response getArticle(@PathParam("id") Long id, @HeaderParam("Authorization") String token) {
-        Article article = find(id);
-
-        if (article == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+    // Método auxiliar para obtener el nombre de usuario autenticado (a partir del token de autorización)
+    private String getAuthenticatedUsername(String authorization) {
+        // Este es solo un ejemplo de cómo podrías hacerlo; deberías integrarlo con tu sistema de autenticación
+        if (authorization == null || authorization.isEmpty()) {
+            return null;
         }
 
-        // Verificación de autenticación
-        if (!isAuthenticated(token)) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-
-        // Aumentar las vistas
-        article.setViews(article.getViews() + 1);
-        edit(article);
-
-        return Response.ok(article).build();
+        // Extraer el nombre del usuario del token (simplificado)
+        return authorization.replace("Bearer ", "").split(":")[0];
     }
 
-    // DELETE /rest/api/v1/article/${id}
-    @DELETE
-    @Path("/{id}")
-    public Response deleteArticle(@PathParam("id") Long id, @HeaderParam("Authorization") String token) {
-        Article article = find(id);
-
-        if (article == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-
-        // Verificar autenticación y si el usuario es el autor
-        Customer author = article.getAuthorName() != null ? findAuthorByUsername(article.getAuthorName()) : null;
-        if (!isAuthenticated(token) || author == null || !author.getUsername().equals(getUsernameFromToken(token))) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-
-        remove(article);  // Eliminar el artículo
-        return Response.status(Response.Status.NO_CONTENT).build();
-    }
-
-    // POST /rest/api/v1/article
-    @POST
-    public Response createArticle(Article article, @HeaderParam("Authorization") String token) {
-        // Verificar si el usuario está autenticado
-        if (!isAuthenticated(token)) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-
-        // Verificar que el usuario sea autor
-        Customer author = findAuthorByUsername(getUsernameFromToken(token));
-        if (author == null || !author.isAuthor()) {
-            return Response.status(Response.Status.FORBIDDEN).entity("You are not an authorized author.").build();
-        }
-
-        // Validar que los tópicos sean correctos (máximo 2)
-        if (article.getTopics() == null || article.getTopics().size() > 2) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("You must provide 1 or 2 topics.").build();
-        }
-
-        // Establecer la fecha de publicación automáticamente
-        article.setDatePublished(new Date());
-
-        // Asignar el autor al artículo
-        article.setAuthorName(author.getUsername());
-
-        create(article);  // Guardar el artículo
-
-        // Devolver el enlace al artículo creado
-        
-        URI uri = UriBuilder.fromPath("/article/{id}").build(article.getId());
-        return Response.created(uri).entity("Article created with ID: " + article.getId()).build();
-        
-    }
-
-    // Métodos auxiliares
-    private boolean isAuthenticated(String token) {
-        // Implementar la lógica de autenticación (por ejemplo, verificar un token JWT)
-        return token != null && !token.isEmpty();  // Simulación de autenticación
-    }
-
-    private String getUsernameFromToken(String token) {
-        // Implementar la lógica para obtener el nombre de usuario desde el token
-        return "exampleUser";  // Simulación
-    }
-
-    private Customer findAuthorByUsername(String username) {
-        // Buscar un autor en la base de datos por su nombre de usuario
-        try {
-            return em.createQuery("SELECT c FROM Customer c WHERE c.username = :username", Customer.class)
-                     .setParameter("username", username)
-                     .getSingleResult();
-        } catch (Exception e) {
-            return null;  // No se encontró el autor
-        }
+    // Método auxiliar para verificar si un tema es válido
+    private boolean isValidTopic(String topic) {
+        // Lógica para validar si un tema es válido, puede implicar consultar la base de datos
+        List<String> validTopics = List.of("Java", "Web Programming", "Databases", "AI", "Machine Learning");
+        return validTopics.contains(topic);
     }
 }
