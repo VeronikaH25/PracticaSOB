@@ -28,7 +28,7 @@ import jakarta.ws.rs.core.UriInfo;
 @Consumes(MediaType.APPLICATION_JSON)
 public class CustomerFacadeREST extends AbstractFacade<Customer> {
 
-    @PersistenceContext
+    @PersistenceContext(unitName = "Homework1PU")
     private EntityManager em;
 
     public CustomerFacadeREST() {

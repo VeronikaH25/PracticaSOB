@@ -30,7 +30,7 @@ import java.net.URI;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ArticleFacadeREST extends AbstractFacade<Article> {
 
-    @PersistenceContext
+    @PersistenceContext(unitName = "Homework1PU")
     private EntityManager em;
 
     public ArticleFacadeREST() {
