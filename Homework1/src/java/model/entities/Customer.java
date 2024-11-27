@@ -20,7 +20,10 @@ public class Customer {
 
     @Column(nullable = false, unique = true)
     private String username; // Nombre de usuario único
-
+    
+    @Column(nullable = false)
+    private String password; // Contraseña del usuario
+   
     @Column(nullable = false)
     private String firstName; // Nombre
 
@@ -42,8 +45,9 @@ public class Customer {
     // Constructores
     public Customer() {}
 
-    public Customer(String username, String firstName, String lastName, String email, Date registeredDate, boolean isAuthor) {
+    public Customer(String username, String password, String firstName, String lastName, String email, Date registeredDate, boolean isAuthor) {
         this.username = username;
+        this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -66,6 +70,14 @@ public class Customer {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+    
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getFirstName() {

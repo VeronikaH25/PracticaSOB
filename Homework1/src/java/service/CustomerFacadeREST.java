@@ -40,6 +40,7 @@ public class CustomerFacadeREST extends AbstractFacade<Customer> {
 
     @GET
     @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+    @Override
     public List<Customer> findAll() {
         List<Customer> customers = super.findAll();
         // Añadir los enlaces de los últimos artículos a los usuarios que son autores
@@ -106,9 +107,9 @@ public class CustomerFacadeREST extends AbstractFacade<Customer> {
     }
 
     // Este método simula la obtención del último artículo de un usuario.
-    private Long getLastArticleIdForCustomer(Long customerId) {
+    private int getLastArticleIdForCustomer(Long customerId) {
         // Aquí puedes implementar la lógica real para obtener el último artículo del usuario.
         // Esta es una simulación que retorna un ID ficticio.
-        return 12345L; // Ejemplo de ID de artículo
+        return 1; // Ejemplo de ID de artículo
     }
 }

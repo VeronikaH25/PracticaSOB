@@ -50,9 +50,9 @@
                 "INSERT INTO " + schema + ".ARTICLE (id, title, authorName, datePublished, views, featuredImage, content) VALUES (NEXT VALUE FOR ARTICLE_GEN, 'Modern Database Design', 'Jaime Lopez', DATE('2023-07-20'), 2200,'image3.jpg', 'This article covers normalization and database schemas.')",
     
                 // Poblar tabla Customer
-                "INSERT INTO " + schema + ".CUSTOMER (id, username, firstName, lastName, email, isAuthor) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'maria14_tgn', 'Maria', 'Sevilla', 'maria14@example.com',  1)",
-                "INSERT INTO " + schema + ".CUSTOMER (id, username, firstName, lastName, email, isAuthor) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'jana_lopz', 'Jana', 'Lopez', 'janal@example.com', 1)",
-                "INSERT INTO " + schema + ".CUSTOMER (id, username, firstName, lastName, email, isAuthor) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'lector123', 'Susana', 'Fernandez', 'susif@example.com',0)"
+                "INSERT INTO " + schema + ".CUSTOMER (id, username,password, firstName, lastName, email, isAuthor) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'maria14_tgn', '1234', 'Maria', 'Sevilla', 'maria14@example.com',  1)",
+                "INSERT INTO " + schema + ".CUSTOMER (id, username,password, firstName, lastName, email, isAuthor) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'jana_lopz','1235', 'Jana', 'Lopez', 'janal@example.com', 1)",
+                "INSERT INTO " + schema + ".CUSTOMER (id, username,password, firstName, lastName, email, isAuthor) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'lector123','1236', 'Susana', 'Fernandez', 'susif@example.com',0)"
             };
             for (String datum : data) {
                 if (stmt.executeUpdate(datum)<=0) {
