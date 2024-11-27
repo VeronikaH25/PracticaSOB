@@ -32,8 +32,14 @@ public class Article {
     @Column(nullable = false)
     private int views; // Número de visualizaciones (p. ej., 3300 representado como 3.3k)
 
-    @ElementCollection
-    private List<String> topics; // Tópicos del artículo (máximo 2, p. ej., Web Programming, JavaScript)
+    // Relación ManyToMany con la entidad Topic
+    @ManyToMany
+    @JoinTable(
+        name = "article_topic", 
+        joinColumns = @JoinColumn(name = "article_id"), 
+        inverseJoinColumns = @JoinColumn(name = "topic_id")
+    )
+    private List<Topic> topics; // Tópicos del artículo (máximo 2, p. ej., Web Programming, JavaScript)
 
     @Lob
     @Column(nullable = false)
@@ -46,7 +52,7 @@ public class Article {
     // Constructores
     public Article() {}
 
-    public Article(String title, String authorName, Date datePublished, int views, List<String> topics, String featuredImage, String content) {
+    public Article(String title, String authorName, Date datePublished, int views, List<Topic> topics, String featuredImage, String content) {
         this.title = title;
         this.authorName = authorName;
         this.datePublished = datePublished;
@@ -97,11 +103,11 @@ public class Article {
         this.views = views;
     }
 
-    public List<String> getTopics() {
+    public List<Topic> getTopics() {
         return topics;
     }
 
-    public void setTopics(List<String> topics) {
+    public void setTopics(List<Topic> topics) {
         this.topics = topics;
     }
 

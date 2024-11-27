@@ -5,7 +5,7 @@
 package service;
 
 import model.entities.Article;
-import model.entities.Customer;
+import model.entities.Topic;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import authn.Secured;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -39,12 +40,12 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
     // GET /rest/api/v1/article?topic=${topic}&author=${author}
     @GET
     @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-    public List<Article> findAll(@QueryParam("topic") List<String> topics, @QueryParam("author") String author) {
+    public List<Article> findAll(@QueryParam("topic") List<String> topicNames, @QueryParam("author") String author) {
         String queryStr = "SELECT a FROM Article a WHERE 1=1";
 
         // Añadir filtro por topic
-        if (topics != null && !topics.isEmpty()) {
-            queryStr += " AND a.topics IN :topics";
+        if (topicNames != null && !topicNames.isEmpty()) {
+            queryStr += " AND EXISTS (SELECT t FROM a.topics t WHERE t.name IN :topicNames)";
         }
 
         // Añadir filtro por autor
@@ -57,8 +58,8 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
         TypedQuery<Article> query = em.createQuery(queryStr, Article.class);
 
         // Establecer parámetros
-        if (topics != null && !topics.isEmpty()) {
-            query.setParameter("topics", topics);
+        if (topicNames != null && !topicNames.isEmpty()) {
+            query.setParameter("topicNames", topicNames);
         }
         if (author != null && !author.isEmpty()) {
             query.setParameter("author", author);
@@ -101,7 +102,6 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
         }
 
         // Verificar si el usuario autenticado es el autor del artículo
-        // Este es un ejemplo, se debería validar el autor real a través del token de la sesión
         if (!isAuthorizedToDelete(article, authorization)) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
@@ -122,20 +122,22 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
         }
 
         // Suponiendo que el nombre del autor debe coincidir con el usuario autenticado
-        // (esto puede necesitar una integración con un sistema de autenticación real)
         String authenticatedUsername = getAuthenticatedUsername(authorization);
         if (!authenticatedUsername.equals(article.getAuthorName())) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
 
-        // Validar si los tópicos existen en la base de datos
-        // Este es un ejemplo simple, deberías agregar lógica para comprobar los tópicos válidos
-        for (String topic : article.getTopics()) {
-            if (!isValidTopic(topic)) {
+        // Validar si los tópicos existen en la base de datos y asociarlos
+        List<Topic> validTopics = new ArrayList<>();
+        for (Topic topic : article.getTopics()) {
+            Topic existingTopic = em.find(Topic.class, topic.getId());
+            if (existingTopic == null) {
                 return Response.status(Response.Status.BAD_REQUEST)
-                        .entity("Tópico no válido: " + topic).build();
+                        .entity("Tópico no válido: " + topic.getName()).build();
             }
+            validTopics.add(existingTopic);
         }
+        article.setTopics(validTopics);  // Asociamos los tópicos válidos
 
         // Establecer la fecha de publicación
         article.setDatePublished(new java.util.Date());
@@ -152,7 +154,6 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
     // Método auxiliar para validar si el usuario está autorizado a borrar un artículo
     private boolean isAuthorizedToDelete(Article article, String authorization) {
         // Aquí debes validar el token y comparar el autor real con el que está autenticado.
-        // Este es solo un ejemplo simple basado en el nombre del autor
         return article.getAuthorName().equals(getAuthenticatedUsername(authorization));
     }
 
@@ -165,12 +166,5 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
 
         // Extraer el nombre del usuario del token (simplificado)
         return authorization.replace("Bearer ", "").split(":")[0];
-    }
-
-    // Método auxiliar para verificar si un tema es válido
-    private boolean isValidTopic(String topic) {
-        // Lógica para validar si un tema es válido, puede implicar consultar la base de datos
-        List<String> validTopics = List.of("Java", "Web Programming", "Databases", "AI", "Machine Learning");
-        return validTopics.contains(topic);
     }
 }
