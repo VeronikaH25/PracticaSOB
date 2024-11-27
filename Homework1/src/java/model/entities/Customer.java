@@ -6,6 +6,7 @@ package model.entities;
 
 import jakarta.persistence.*;
 import java.util.Date;
+import jakarta.json.bind.annotation.JsonbTransient; 
 /**
  *
  * @author veron
@@ -21,6 +22,7 @@ public class Customer {
     @Column(nullable = false, unique = true)
     private String username; // Nombre de usuario único
     
+    @JsonbTransient     // Con esto el 'password' no sale en los GETs
     @Column(nullable = false)
     private String password; // Contraseña del usuario
    
