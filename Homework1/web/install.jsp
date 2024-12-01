@@ -24,26 +24,35 @@
             String dbname = "homework1";
             String schema = "ROOT";
             Class.forName("org.apache.derby.jdbc.ClientDriver");
-            /* this will generate database if not exist */
+            /* Conexión a la base de datos */
             Connection con = DriverManager.getConnection("jdbc:derby://localhost:1527/" + dbname, "root", "root");
             Statement stmt = con.createStatement();
             
-            /* inserting data */
+            /* Insertando datos */
             String data[] = new String[]{
                 "INSERT INTO " + schema + ".TOPIC VALUES (NEXT VALUE FOR TOPIC_GEN, 'Computer Science')",
                 "INSERT INTO " + schema + ".TOPIC VALUES (NEXT VALUE FOR TOPIC_GEN, 'Web Development')",
                 "INSERT INTO " + schema + ".TOPIC VALUES (NEXT VALUE FOR TOPIC_GEN, 'AI')",
                 "INSERT INTO " + schema + ".TOPIC VALUES (NEXT VALUE FOR TOPIC_GEN, 'Databases')",
-                "INSERT INTO " + schema + ".CREDENTIALS VALUES (NEXT VALUE FOR CREDENTIALS_GEN, 'sob', 'sob')",
+                
+                // Insertando credenciales para los usuarios
+                "INSERT INTO " + schema + ".CREDENTIALS VALUES (NEXT VALUE FOR CREDENTIALS_GEN, 'maria14_tgn', '1234')",
+                "INSERT INTO " + schema + ".CREDENTIALS VALUES (NEXT VALUE FOR CREDENTIALS_GEN, 'jana_lopz','1235')",
+                "INSERT INTO " + schema + ".CREDENTIALS VALUES (NEXT VALUE FOR CREDENTIALS_GEN, 'lector123','1236')",
+                
+                // Insertando artículos
                 "INSERT INTO " + schema + ".ARTICLE (id, title, authorName, datePublished, views, featuredImage, content) VALUES (NEXT VALUE FOR ARTICLE_GEN, 'Understanding Java Streams', 'Ana Rodriguez', DATE('2023-09-15'), 3300, 'image1.jpg', 'Java Streams simplify processing of collections and streams in functional programming style.')",
                 "INSERT INTO " + schema + ".ARTICLE (id, title, authorName, datePublished, views, featuredImage, content) VALUES (NEXT VALUE FOR ARTICLE_GEN, 'Exploring REST APIs', 'Jana Gomez', DATE('2023-08-10'), 1200, 'image2.jpg', 'REST APIs are essential for building scalable services.')",
                 "INSERT INTO " + schema + ".ARTICLE (id, title, authorName, datePublished, views, featuredImage, content) VALUES (NEXT VALUE FOR ARTICLE_GEN, 'Modern Database Design', 'Jaime Lopez', DATE('2023-07-20'), 2200,'image3.jpg', 'This article covers normalization and database schemas.')",
-                "INSERT INTO " + schema + ".CUSTOMER (id, username,password, firstName, lastName, email, isAuthor) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'maria14_tgn', '1234', 'Maria', 'Sevilla', 'maria14@example.com',  1)",
-                "INSERT INTO " + schema + ".CUSTOMER (id, username,password, firstName, lastName, email, isAuthor) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'jana_lopz','1235', 'Jana', 'Lopez', 'janal@example.com', 1)",
-                "INSERT INTO " + schema + ".CUSTOMER (id, username,password, firstName, lastName, email, isAuthor) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'lector123','1236', 'Susana', 'Fernandez', 'susif@example.com',0)"
+                
+                // Insertando clientes con la relación a credenciales
+                // Se asume que los ids de los CREDENTIALS se generarán en el orden de inserción
+                "INSERT INTO " + schema + ".CUSTOMER (id, firstName, lastName, email, isAuthor, credentials_id) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'Maria', 'Sevilla', 'maria14@example.com',  1, 1)",
+                "INSERT INTO " + schema + ".CUSTOMER (id, firstName, lastName, email, isAuthor, credentials_id) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'Jana', 'Lopez', 'janal@example.com', 1, 2)",
+                "INSERT INTO " + schema + ".CUSTOMER (id, firstName, lastName, email, isAuthor, credentials_id) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'Susana', 'Fernandez', 'susif@example.com', 0, 3)",
             };
 
-            // Insertar los datos
+            // Insertar los datos en las tablas
             for (String datum : data) {
                 if (stmt.executeUpdate(datum) <= 0) {
                     out.println("<span class='error'>Error inserting data: " + datum + "</span>");
@@ -74,5 +83,3 @@
         <button onclick="window.location='<%=request.getSession().getServletContext().getContextPath()%>'">Go home</button>
     </body>
 </html>
-
-

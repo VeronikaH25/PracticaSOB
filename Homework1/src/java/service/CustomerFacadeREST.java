@@ -68,26 +68,33 @@ public class CustomerFacadeREST extends AbstractFacade<Customer> {
     }
 
     @PUT
-    @Path("{id}")
-    @Secured
-    @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-    public Response edit(@PathParam("id") Long id, Customer customer) {
-        Customer existingCustomer = super.find(id);
-        if (existingCustomer == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        
-        // Actualizar solo la información permitida, excluyendo datos confidenciales como la contraseña.
-        existingCustomer.setUsername(customer.getUsername());
-        existingCustomer.setFirstName(customer.getFirstName());
-        existingCustomer.setLastName(customer.getLastName());
-        existingCustomer.setEmail(customer.getEmail());
-        existingCustomer.setRegisteredDate(customer.getRegisteredDate());
-        existingCustomer.setAuthor(customer.isAuthor());
-
-        super.edit(existingCustomer);
-        return Response.ok().entity(existingCustomer).build();
+@Path("{id}")
+@Secured
+@Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+public Response edit(@PathParam("id") Long id, Customer customer) {
+    Customer existingCustomer = super.find(id);
+    if (existingCustomer == null) {
+        return Response.status(Response.Status.NOT_FOUND).build();
     }
+
+    // Si la entidad Customer tiene una relación con Credentials, deberíamos actualizarla
+    if (existingCustomer.getCredentials() != null) {
+        // Aquí se actualiza la relación con Credentials, no directamente en Customer
+        existingCustomer.getCredentials().setUsername(customer.getCredentials().getUsername());
+        existingCustomer.getCredentials().setPassword(customer.getCredentials().getPassword());
+    }
+
+    // Actualiza solo los demás campos de Customer, excepto los relacionados con las credenciales.
+    existingCustomer.setFirstName(customer.getFirstName());
+    existingCustomer.setLastName(customer.getLastName());
+    existingCustomer.setEmail(customer.getEmail());
+    existingCustomer.setRegisteredDate(customer.getRegisteredDate());
+    existingCustomer.setAuthor(customer.isAuthor());
+
+    super.edit(existingCustomer);
+    return Response.ok().entity(existingCustomer).build();
+}
+
 
     @DELETE
     @Path("{id}")

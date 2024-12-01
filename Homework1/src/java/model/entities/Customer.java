@@ -6,7 +6,9 @@ package model.entities;
 
 import jakarta.persistence.*;
 import java.util.Date;
-import jakarta.json.bind.annotation.JsonbTransient; 
+//import jakarta.json.bind.annotation.JsonbTransient; 
+import authn.Credentials;  // Importamos la clase Credentials desde el paquete 'authn'
+import java.util.List;
 /**
  *
  * @author veron
@@ -19,12 +21,12 @@ public class Customer {
     @SequenceGenerator(name = "customer_gen", sequenceName = "CUSTOMER_GEN", allocationSize = 1)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String username; // Nombre de usuario único
+    //@Column(nullable = false, unique = true)
+    //private String username; // Nombre de usuario único
     
-    @JsonbTransient     // Con esto el 'password' no sale en los GETs
-    @Column(nullable = false)
-    private String password; // Contraseña del usuario
+    //@JsonbTransient     // Con esto el 'password' no sale en los GETs
+    //@Column(nullable = false)
+    //private String password; // Contraseña del usuario
    
     @Column(nullable = false)
     private String firstName; // Nombre
@@ -43,13 +45,23 @@ public class Customer {
 
     @Transient
     private String lastArticleLink; // HATEOAS: enlace al último artículo si es autor
+    
+    @OneToOne
+    @JoinColumn(name = "credentials_id", referencedColumnName = "id") // Relación One-to-One
+    private Credentials credentials; // Relación con Credentials
+    
+    // Relación One-to-Many con Article (un cliente puede tener muchos artículos)
+    @OneToMany(mappedBy = "author")  // mappedBy hace referencia al atributo 'author' en Article
+    private List<Article> articles;
 
     // Constructores
     public Customer() {}
 
-    public Customer(String username, String password, String firstName, String lastName, String email, Date registeredDate, boolean isAuthor) {
-        this.username = username;
-        this.password = password;
+    public Customer( String firstName, String lastName, String email, Date registeredDate, boolean isAuthor) {
+        
+        //String username, String password,
+        //this.username = username; 
+        //this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -66,7 +78,7 @@ public class Customer {
         this.id = id;
     }
 
-    public String getUsername() {
+   /* public String getUsername() {
         return username;
     }
 
@@ -81,7 +93,7 @@ public class Customer {
     public void setPassword(String password) {
         this.password = password;
     }
-
+*/
     public String getFirstName() {
         return firstName;
     }
@@ -128,5 +140,21 @@ public class Customer {
 
     public void setLastArticleLink(String lastArticleLink) {
         this.lastArticleLink = lastArticleLink;
+    }
+    
+    public Credentials getCredentials() {
+        return credentials;
+    }
+
+    public void setCredentials(Credentials credentials) {
+        this.credentials = credentials;
+    }
+    
+    public List<Article> getArticles() {
+        return articles;
+    }
+
+    public void setArticles(List<Article> articles) {
+        this.articles = articles;
     }
 }

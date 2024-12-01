@@ -1,8 +1,10 @@
 package authn;
+import jakarta.json.bind.annotation.JsonbTransient;
 import java.io.Serializable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlRootElement;
+import model.entities.Customer;  // Importamos la clase Customer desde el paquete 'model.entities'
 
 @Entity
 @NamedQuery(name="Credentials.findUser", 
@@ -17,7 +19,11 @@ public class Credentials implements Serializable {
     @NotNull(message="Username can't be null")
     private String username;
     @NotNull(message="Password can't be null")
+    @JsonbTransient  // Esto evitará que el campo password se incluya en la respuesta JSON
     private String password;
+    
+    @OneToOne(mappedBy = "credentials") // Relación One-to-One inversa con Customer
+    private Customer customer; // Relación con Customer
 
     public Long getId() {
         return id;
@@ -42,7 +48,14 @@ public class Credentials implements Serializable {
     public void setPassword(String password) {
         this.password = password;
     }
+    
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
+    }
 }
 
 
-//aina clonado

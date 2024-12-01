@@ -49,6 +49,12 @@ public class Article {
     @Column(nullable = false, length = 500)
     private String content; // Texto corto del artículo (ajustado a 500 palabras)
 
+    // Relación Many-to-One con Customer (un artículo tiene un solo autor)
+    @ManyToOne
+    @JoinColumn(name = "author_id", referencedColumnName = "id")
+    private Customer author; // El autor del artículo
+    
+    
     // Constructores
     public Article() {}
 
@@ -129,5 +135,13 @@ public class Article {
         } else {
             this.content = content;
         }
+    }
+    
+    public Customer getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(Customer author) {
+        this.author = author;
     }
 }
