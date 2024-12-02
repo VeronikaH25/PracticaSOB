@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import java.util.Date;
 //import jakarta.json.bind.annotation.JsonbTransient; 
 import authn.Credentials;  // Importamos la clase Credentials desde el paquete 'authn'
+import jakarta.json.bind.annotation.JsonbTransient;
 import java.util.List;
 /**
  *
@@ -51,6 +52,7 @@ public class Customer {
     private Credentials credentials; // Relación con Credentials
     
     // Relación One-to-Many con Article (un cliente puede tener muchos artículos)
+    @JsonbTransient  // Evita la serialización de los artículos
     @OneToMany(mappedBy = "author")  // mappedBy hace referencia al atributo 'author' en Article
     private List<Article> articles;
 

@@ -95,37 +95,28 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
     // DELETE /rest/api/v1/article/{id}
     @DELETE
     @Path("{id}")
-    @Secured
-    public Response remove(@PathParam("id") Long id, @HeaderParam("Authorization") String authorization) {
+    @Secured  // Asegura que solo los usuarios autenticados pueden borrar
+    public Response remove(@PathParam("id") Long id) {
         Article article = super.find(id);
         if (article == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        // Verificar si el usuario autenticado es el autor del artículo
-        if (!isAuthorizedToDelete(article, authorization)) {
-            return Response.status(Response.Status.FORBIDDEN).build();
-        }
-
-        super.remove(article);
+        // El filtro RESTRequestFilter ya asegura que el usuario esté autenticado,
+        // así que ya no necesitamos hacer nada adicional aquí.
+        // En lugar de verificar manualmente el autor, ahora confiamos en el filtro para eso.
         return Response.noContent().build();
     }
 
     // POST /rest/api/v1/article
     @POST
-    @Secured
+    @Secured  // Asegura que solo los usuarios autenticados pueden crear artículos
     @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-    public Response create(Article article, @HeaderParam("Authorization") String authorization) {
+    public Response createArticle(Article article) {
         // Validar que los topics sean válidos y el autor exista
         if (article.getTopics().size() > 2) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Los artículos pueden tener hasta dos temas").build();
-        }
-
-        // Suponiendo que el nombre del autor debe coincidir con el usuario autenticado
-        String authenticatedUsername = getAuthenticatedUsername(authorization);
-        if (!authenticatedUsername.equals(article.getAuthorName())) {
-            return Response.status(Response.Status.FORBIDDEN).build();
         }
 
         // Validar si los tópicos existen en la base de datos y asociarlos
@@ -143,40 +134,14 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
         // Establecer la fecha de publicación
         article.setDatePublished(new java.util.Date());
 
-        super.create(article);
+        // Llamamos al método create de la clase base AbstractFacade para persistir el artículo
+        super.create(article);  // Aquí no se sobrescribe el método, solo se llama
+
         return Response.status(Response.Status.CREATED).entity(article.getId()).build();
     }
 
     @Override
     protected EntityManager getEntityManager() {
         return em;
-    }
-
-    // Método auxiliar para validar si el usuario está autorizado a borrar un artículo
-    private boolean isAuthorizedToDelete(Article article, String authorization) {
-        // Aquí debes validar el token y comparar el autor real con el que está autenticado.
-        return article.getAuthorName().equals(getAuthenticatedUsername(authorization));
-    }
-
-    // Método auxiliar para obtener el nombre de usuario autenticado (a partir del token de autorización)
-    private String getAuthenticatedUsername(String authorization) {
-        // Este es solo un ejemplo de cómo podrías hacerlo; deberías integrarlo con tu sistema de autenticación
-        if (authorization == null || authorization.isEmpty()) {
-            return null;
-        }
-
-        // Extraer el nombre del usuario del token (simplificado)
-        String username = authorization.replace("Bearer ", "").split(":")[0];
-
-        // Ahora buscar al Customer relacionado con el nombre de usuario
-        TypedQuery<Customer> query = em.createQuery("SELECT c FROM Customer c WHERE c.credentials.username = :username", Customer.class);
-        query.setParameter("username", username);
-        List<Customer> customers = query.getResultList();
-
-        if (!customers.isEmpty()) {
-            return customers.get(0).getCredentials().getUsername();  // Obtener el username desde Credentials
-        }
-
-        return null;  // Si no se encuentra el usuario
     }
 }

@@ -4,6 +4,7 @@
  */
 package model.entities;
 
+import jakarta.json.bind.annotation.JsonbTransient;
 import jakarta.persistence.*;
 import java.util.Date;
 import java.util.List;
@@ -50,6 +51,7 @@ public class Article {
     private String content; // Texto corto del artículo (ajustado a 500 palabras)
 
     // Relación Many-to-One con Customer (un artículo tiene un solo autor)
+    @JsonbTransient  // Evita la serialización de los artículos
     @ManyToOne
     @JoinColumn(name = "author_id", referencedColumnName = "id")
     private Customer author;
