@@ -102,6 +102,8 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
+        // Eliminar el artículo de la base de datos
+        em.remove(article);
         // El filtro RESTRequestFilter ya asegura que el usuario esté autenticado,
         // así que ya no necesitamos hacer nada adicional aquí.
         // En lugar de verificar manualmente el autor, ahora confiamos en el filtro para eso.
