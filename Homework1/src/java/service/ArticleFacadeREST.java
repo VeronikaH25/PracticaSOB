@@ -6,6 +6,7 @@ package service;
 
 import model.entities.Article;
 import model.entities.Topic;
+import model.entities.Customer;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -165,6 +166,17 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
         }
 
         // Extraer el nombre del usuario del token (simplificado)
-        return authorization.replace("Bearer ", "").split(":")[0];
+        String username = authorization.replace("Bearer ", "").split(":")[0];
+
+        // Ahora buscar al Customer relacionado con el nombre de usuario
+        TypedQuery<Customer> query = em.createQuery("SELECT c FROM Customer c WHERE c.credentials.username = :username", Customer.class);
+        query.setParameter("username", username);
+        List<Customer> customers = query.getResultList();
+
+        if (!customers.isEmpty()) {
+            return customers.get(0).getCredentials().getUsername();  // Obtener el username desde Credentials
+        }
+
+        return null;  // Si no se encuentra el usuario
     }
 }

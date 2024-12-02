@@ -5,20 +5,17 @@
 package service;
 
 import model.entities.Customer;
+import model.entities.Article; // Asegúrate de importar la clase Article
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.PUT;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import authn.Secured;
 import java.util.List;
+import java.util.Comparator;
+import java.util.Optional;
 
 
 /**
@@ -43,12 +40,17 @@ public class CustomerFacadeREST extends AbstractFacade<Customer> {
     @Override
     public List<Customer> findAll() {
         List<Customer> customers = super.findAll();
-        // Añadir los enlaces de los últimos artículos a los usuarios que son autores
+        
+        // Añadir enlaces al último artículo de los usuarios que son autores
         for (Customer customer : customers) {
             if (customer.isAuthor()) {
-                customer.setLastArticleLink("/article/" + getLastArticleIdForCustomer(customer.getId()));
+                customer.setLastArticleLink("/article/" + getLastArticleIdForCustomer(customer));
             }
         }
+        
+        // Aseguramos que los datos sensibles como la contraseña no se incluyan en la respuesta
+        customers.forEach(c -> c.setCredentials(null));
+        
         return customers;
     }
 
@@ -60,41 +62,45 @@ public class CustomerFacadeREST extends AbstractFacade<Customer> {
         if (customer == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        // Omite la contraseña y añade el enlace al artículo si el usuario es autor
+
+        // Si el usuario es autor, se añade el enlace al último artículo
         if (customer.isAuthor()) {
-            customer.setLastArticleLink("/article/" + getLastArticleIdForCustomer(id));
+            customer.setLastArticleLink("/article/" + getLastArticleIdForCustomer(customer));
         }
+
+        // Aseguramos que no se envíe información sensible como la contraseña
+        customer.setCredentials(null);
+        
         return Response.ok().entity(customer).build();
     }
 
     @PUT
-@Path("{id}")
-@Secured
-@Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-public Response edit(@PathParam("id") Long id, Customer customer) {
-    Customer existingCustomer = super.find(id);
-    if (existingCustomer == null) {
-        return Response.status(Response.Status.NOT_FOUND).build();
+    @Path("{id}")
+    @Secured
+    @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+    public Response edit(@PathParam("id") Long id, Customer customer) {
+        Customer existingCustomer = super.find(id);
+        if (existingCustomer == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        // Actualiza las credenciales si están presentes
+        if (existingCustomer.getCredentials() != null && customer.getCredentials() != null) {
+            existingCustomer.getCredentials().setUsername(customer.getCredentials().getUsername());
+            existingCustomer.getCredentials().setPassword(customer.getCredentials().getPassword());
+        }
+
+        // Actualiza los demás campos del cliente
+        existingCustomer.setFirstName(customer.getFirstName());
+        existingCustomer.setLastName(customer.getLastName());
+        existingCustomer.setEmail(customer.getEmail());
+        existingCustomer.setRegisteredDate(customer.getRegisteredDate());
+        existingCustomer.setAuthor(customer.isAuthor());
+
+        // Actualiza la entidad en la base de datos
+        super.edit(existingCustomer);
+        return Response.ok().entity(existingCustomer).build();
     }
-
-    // Si la entidad Customer tiene una relación con Credentials, deberíamos actualizarla
-    if (existingCustomer.getCredentials() != null) {
-        // Aquí se actualiza la relación con Credentials, no directamente en Customer
-        existingCustomer.getCredentials().setUsername(customer.getCredentials().getUsername());
-        existingCustomer.getCredentials().setPassword(customer.getCredentials().getPassword());
-    }
-
-    // Actualiza solo los demás campos de Customer, excepto los relacionados con las credenciales.
-    existingCustomer.setFirstName(customer.getFirstName());
-    existingCustomer.setLastName(customer.getLastName());
-    existingCustomer.setEmail(customer.getEmail());
-    existingCustomer.setRegisteredDate(customer.getRegisteredDate());
-    existingCustomer.setAuthor(customer.isAuthor());
-
-    super.edit(existingCustomer);
-    return Response.ok().entity(existingCustomer).build();
-}
-
 
     @DELETE
     @Path("{id}")
@@ -104,6 +110,7 @@ public Response edit(@PathParam("id") Long id, Customer customer) {
         if (customer == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
+        
         super.remove(customer);
         return Response.noContent().build();
     }
@@ -113,10 +120,21 @@ public Response edit(@PathParam("id") Long id, Customer customer) {
         return em;
     }
 
-    // Este método simula la obtención del último artículo de un usuario.
-    private int getLastArticleIdForCustomer(Long customerId) {
-        // Aquí puedes implementar la lógica real para obtener el último artículo del usuario.
-        // Esta es una simulación que retorna un ID ficticio.
-        return 1; // Ejemplo de ID de artículo
+    // Método actualizado para obtener el ID del último artículo publicado
+    private Long getLastArticleIdForCustomer(Customer customer) {
+        // Obtener la lista de artículos del cliente
+        List<Article> articles = customer.getArticles();
+
+        // Si no hay artículos, devolvemos null
+        if (articles == null || articles.isEmpty()) {
+            return null;
+        }
+
+        // Ordenar los artículos por fecha de publicación, del más reciente al más antiguo
+        Optional<Article> lastArticle = articles.stream()
+                .max(Comparator.comparing(Article::getDatePublished)); // Se asume que Article tiene un campo publishedDate
+
+        // Si hay un artículo, devolver su ID
+        return lastArticle.map(Article::getId).orElse(null);
     }
 }

@@ -52,7 +52,8 @@ public class Article {
     // Relación Many-to-One con Customer (un artículo tiene un solo autor)
     @ManyToOne
     @JoinColumn(name = "author_id", referencedColumnName = "id")
-    private Customer author; // El autor del artículo
+    private Customer author;
+
     
     
     // Constructores
