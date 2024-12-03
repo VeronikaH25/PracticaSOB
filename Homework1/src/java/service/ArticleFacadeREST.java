@@ -114,7 +114,12 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
     @POST
     @Secured  // Asegura que solo los usuarios autenticados pueden crear artículos
     @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-    public Response createArticle(Article article) {
+    public Response createArticle(Article article, @HeaderParam("Authorization") String authorization) {
+        
+        // Valida el encabezado de autorización (puedes personalizar esta validación)
+        if (authorization == null || authorization.isEmpty()) {
+            return Response.status(Response.Status.FORBIDDEN).entity("Authorization header is missing").build();
+        }
         // Validar que los topics sean válidos y el autor exista
         if (article.getTopics().size() > 2) {
             return Response.status(Response.Status.BAD_REQUEST)
