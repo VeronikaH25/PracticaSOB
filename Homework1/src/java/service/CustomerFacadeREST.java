@@ -44,7 +44,7 @@ public class CustomerFacadeREST extends AbstractFacade<Customer> {
         // Añadir enlaces al último artículo de los usuarios que son autores
         for (Customer customer : customers) {
             if (customer.isAuthor()) {
-                customer.setLastArticleLink("/article/" + getLastArticleIdForCustomer(customer));
+                customer.setLastArticleLink("/Homework1/webresources/article/" + getLastArticleIdForCustomer(customer));
             }
         }
         
