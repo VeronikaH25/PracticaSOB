@@ -47,9 +47,9 @@
                 "INSERT INTO " + schema + ".CUSTOMER (id, firstName, lastName, email, isAuthor, credentials_id) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'Susana', 'Fernandez', 'susif@example.com', 0, 3)",
 
                 // Insertando artículos con `authorName` y `author_id`
-                "INSERT INTO " + schema + ".ARTICLE (id, title, datePublished, views, featuredImage, content, authorName, author_id, isPrivate) VALUES (NEXT VALUE FOR ARTICLE_GEN, 'Understanding Java Streams', DATE('2023-09-15'), 3300, 'image1.jpg', 'Java Streams simplify processing of collections and streams in functional programming style.', 'Maria Sevilla', 1, 0)", // Artículo no privado
-                "INSERT INTO " + schema + ".ARTICLE (id, title, datePublished, views, featuredImage, content, authorName, author_id, isPrivate) VALUES (NEXT VALUE FOR ARTICLE_GEN, 'Exploring REST APIs', DATE('2023-08-10'), 1200, 'image2.jpg', 'REST APIs are essential for building scalable services.', 'Jana Lopez', 2, 0)", // Artículo no privado
-                "INSERT INTO " + schema + ".ARTICLE (id, title, datePublished, views, featuredImage, content, authorName, author_id, isPrivate) VALUES (NEXT VALUE FOR ARTICLE_GEN, 'Modern Database Design', DATE('2023-07-20'), 2200, 'image3.jpg', 'This article covers normalization and database schemas.', 'Susana Fernandez', 3, 1)" // Artículo privado
+                "INSERT INTO " + schema + ".ARTICLE (id, title, datePublished, views, featuredImage, content, authorName, author_id, isPrivate) VALUES (NEXT VALUE FOR ARTICLE_GEN, 'Understanding Java Streams', DATE('2023-09-15'), 3300, 'image1.jpg', 'Java Streams simplify processing of collections and streams in functional programming style.', 'maria14_tgn', 1, 0)", // Artículo no privado
+                "INSERT INTO " + schema + ".ARTICLE (id, title, datePublished, views, featuredImage, content, authorName, author_id, isPrivate) VALUES (NEXT VALUE FOR ARTICLE_GEN, 'Exploring REST APIs', DATE('2023-08-10'), 1200, 'image2.jpg', 'REST APIs are essential for building scalable services.', 'jana_lopz', 2, 0)", // Artículo no privado
+                "INSERT INTO " + schema + ".ARTICLE (id, title, datePublished, views, featuredImage, content, authorName, author_id, isPrivate) VALUES (NEXT VALUE FOR ARTICLE_GEN, 'Modern Database Design', DATE('2023-07-20'), 2200, 'image3.jpg', 'This article covers normalization and database schemas.', 'lector123', 3, 1)" // Artículo privado
             };
 
             // Insertar los datos en las tablas

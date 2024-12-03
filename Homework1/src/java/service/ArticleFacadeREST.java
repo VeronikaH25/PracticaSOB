@@ -15,6 +15,9 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import authn.Secured;
+import authn.Credentials;
+import com.sun.xml.messaging.saaj.util.Base64;
+import jakarta.persistence.NoResultException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,20 +98,46 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
     // DELETE /rest/api/v1/article/{id}
     @DELETE
     @Path("{id}")
-    @Secured  // Asegura que solo los usuarios autenticados pueden borrar
-    public Response remove(@PathParam("id") Long id) {
-        Article article = super.find(id);
-        if (article == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+    @Secured  // Asegura que solo usuarios autenticados puedan acceder
+    public Response remove(@PathParam("id") Long id, @HeaderParam("Authorization") String authorization) {
+        // Validar la autenticación
+        if (authorization == null || authorization.isEmpty()) {
+            return Response.status(Response.Status.FORBIDDEN).entity("Authentication required").build();
         }
 
-        // Eliminar el artículo de la base de datos
+        // Decodificar las credenciales de autenticación
+        String username;
+        try {
+            String auth = authorization.replace("Basic ", "");
+            String decodedAuth = new String(Base64.base64Decode(auth));  // Tu método de decodificación
+            username = decodedAuth.split(":")[0];  // Extraer el username (antes del ':')
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Invalid authentication format").build();
+        }
+
+        // Buscar el artículo por ID
+        Article article = em.find(Article.class, id);
+        if (article == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Article not found").build();
+        }
+
+        // Obtener el nombre del autor del artículo
+        String articleAuthorUsername = article.getAuthorName();
+        if (articleAuthorUsername == null || articleAuthorUsername.isEmpty()) {
+            return Response.status(Response.Status.FORBIDDEN).entity("Article has no author").build();
+        }
+
+        // Comparar el username autenticado con el del autor del artículo
+        if (!username.equals(articleAuthorUsername)) {
+            return Response.status(Response.Status.FORBIDDEN).entity("You are not the author of this article").build();
+        }
+
+        // Eliminar el artículo
         em.remove(article);
-        // El filtro RESTRequestFilter ya asegura que el usuario esté autenticado,
-        // así que ya no necesitamos hacer nada adicional aquí.
-        // En lugar de verificar manualmente el autor, ahora confiamos en el filtro para eso.
         return Response.noContent().build();
     }
+
+
 
     // POST /rest/api/v1/article
     @POST
