@@ -65,7 +65,7 @@ public class CustomerFacadeREST extends AbstractFacade<Customer> {
 
         // Si el usuario es autor, se añade el enlace al último artículo
         if (customer.isAuthor()) {
-            customer.setLastArticleLink("/article/" + getLastArticleIdForCustomer(customer));
+            customer.setLastArticleLink("/Homework1/webresources/article/" + getLastArticleIdForCustomer(customer));
         }
 
         // Aseguramos que no se envíe información sensible como la contraseña
