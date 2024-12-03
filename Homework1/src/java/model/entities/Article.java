@@ -55,13 +55,16 @@ public class Article {
     @ManyToOne
     @JoinColumn(name = "author_id", referencedColumnName = "id")
     private Customer author;
+    
+    @Column(nullable = false)
+    private boolean isPrivate; // Campo que indica si el artículo es privado o no
 
     
     
     // Constructores
     public Article() {}
 
-    public Article(String title, String authorName, Date datePublished, int views, List<Topic> topics, String featuredImage, String content) {
+    public Article(String title, String authorName, Date datePublished, int views, List<Topic> topics, String featuredImage, String content, boolean isPrivate) {
         this.title = title;
         this.authorName = authorName;
         this.datePublished = datePublished;
@@ -69,6 +72,7 @@ public class Article {
         this.topics = topics;
         this.featuredImage = featuredImage;
         this.content = content;
+        this.isPrivate = isPrivate;
     }
 
     // Getters y Setters
@@ -146,5 +150,13 @@ public class Article {
 
     public void setAuthor(Customer author) {
         this.author = author;
+    }
+    
+    public boolean getisPrivate() {
+        return isPrivate;
+    }
+
+    public void setPrivate(boolean isPrivate) {
+        this.isPrivate = isPrivate;
     }
 }

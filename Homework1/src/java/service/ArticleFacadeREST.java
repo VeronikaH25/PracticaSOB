@@ -81,7 +81,7 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
         }
 
         // Si el artículo es privado, se requiere que el usuario esté registrado
-        if (article.getAuthorName().equals("private") && authorization == null) { 
+        if (article.getisPrivate() && authorization == null) { 
             return Response.status(Response.Status.FORBIDDEN).build();
         }
 
