@@ -49,6 +49,7 @@ public class Customer {
     
     @OneToOne
     @JoinColumn(name = "credentials_id", referencedColumnName = "id") // Relación One-to-One
+    @JsonbTransient // Evita la serialización recursiva
     private Credentials credentials; // Relación con Credentials
     
     // Relación One-to-Many con Article (un cliente puede tener muchos artículos)

@@ -23,6 +23,7 @@ public class Credentials implements Serializable {
     private String password;
     
     @OneToOne(mappedBy = "credentials") // Relación One-to-One inversa con Customer
+    @JsonbTransient // Evita la serialización recursiva
     private Customer customer; // Relación con Customer
 
     public Long getId() {

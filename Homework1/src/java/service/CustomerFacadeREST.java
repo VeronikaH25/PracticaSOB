@@ -76,29 +76,44 @@ public class CustomerFacadeREST extends AbstractFacade<Customer> {
 
     @PUT
     @Path("{id}")
-    @Secured
+    @Secured // Asegura que el usuario esté autenticado
     @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-    public Response edit(@PathParam("id") Long id, Customer customer) {
+    public Response edit(@PathParam("id") Long id, Customer customer, @HeaderParam("Authorization") String authorization) {
+        // Busca el cliente existente
         Customer existingCustomer = super.find(id);
         if (existingCustomer == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
+        // Valida el encabezado de autorización (puedes personalizar esta validación)
+        if (authorization == null || authorization.isEmpty()) {
+            return Response.status(Response.Status.FORBIDDEN).entity("Authorization header is missing").build();
+        }
+
+        // Puedes añadir lógica adicional aquí para verificar si el usuario tiene permisos específicos para editar.
+
         // Actualiza las credenciales si están presentes
-        if (existingCustomer.getCredentials() != null && customer.getCredentials() != null) {
-            existingCustomer.getCredentials().setUsername(customer.getCredentials().getUsername());
-            existingCustomer.getCredentials().setPassword(customer.getCredentials().getPassword());
+        if (customer.getCredentials() != null) {
+            if (existingCustomer.getCredentials() != null) {
+                existingCustomer.getCredentials().setUsername(customer.getCredentials().getUsername());
+                existingCustomer.getCredentials().setPassword(customer.getCredentials().getPassword());
+            } else {
+                // Si no existen credenciales, crea nuevas
+                existingCustomer.setCredentials(customer.getCredentials());
+            }
         }
 
         // Actualiza los demás campos del cliente
-        existingCustomer.setFirstName(customer.getFirstName());
-        existingCustomer.setLastName(customer.getLastName());
-        existingCustomer.setEmail(customer.getEmail());
-        existingCustomer.setRegisteredDate(customer.getRegisteredDate());
+        if (customer.getFirstName() != null) existingCustomer.setFirstName(customer.getFirstName());
+        if (customer.getLastName() != null) existingCustomer.setLastName(customer.getLastName());
+        if (customer.getEmail() != null) existingCustomer.setEmail(customer.getEmail());
+        if (customer.getRegisteredDate() != null) existingCustomer.setRegisteredDate(customer.getRegisteredDate());
         existingCustomer.setAuthor(customer.isAuthor());
 
-        // Actualiza la entidad en la base de datos
+        // Guarda los cambios en la base de datos
         super.edit(existingCustomer);
+
+        // Devuelve la respuesta con el cliente actualizado
         return Response.ok().entity(existingCustomer).build();
     }
 
