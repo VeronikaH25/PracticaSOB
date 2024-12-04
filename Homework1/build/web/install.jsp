@@ -37,9 +37,9 @@
                 "INSERT INTO " + schema + ".TOPIC VALUES (NEXT VALUE FOR TOPIC_GEN, 'Databases')",
                 
                 // Insertando credenciales para los usuarios
-                "INSERT INTO " + schema + ".CREDENTIALS VALUES (NEXT VALUE FOR CREDENTIALS_GEN, 'maria14_tgn', '1234')",
-                "INSERT INTO " + schema + ".CREDENTIALS VALUES (NEXT VALUE FOR CREDENTIALS_GEN, 'jana_lopz','1235')",
-                "INSERT INTO " + schema + ".CREDENTIALS VALUES (NEXT VALUE FOR CREDENTIALS_GEN, 'lector123','1236')",
+                "INSERT INTO " + schema + ".CREDENTIALS (id, username,password) VALUES (NEXT VALUE FOR CREDENTIALS_GEN, 'maria14_tgn', '1234')",
+                "INSERT INTO " + schema + ".CREDENTIALS (id, username,password) VALUES (NEXT VALUE FOR CREDENTIALS_GEN, 'jana_lopz','1235')",
+                "INSERT INTO " + schema + ".CREDENTIALS (id, username,password) VALUES (NEXT VALUE FOR CREDENTIALS_GEN, 'lector123','1236')",
                 
                 // Insertando clientes con las credenciales
                 "INSERT INTO " + schema + ".CUSTOMER (id, firstName, lastName, email, isAuthor, credentials_id) VALUES (NEXT VALUE FOR CUSTOMER_GEN, 'Maria', 'Sevilla', 'maria14@example.com',  1, 1)",
