@@ -17,10 +17,12 @@ import jakarta.ws.rs.core.Response;
 import authn.Secured;
 import authn.Credentials;
 import com.sun.xml.messaging.saaj.util.Base64;
+import com.sun.xml.ws.api.security.trust.Claims;
 import jakarta.persistence.NoResultException;
-
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -139,43 +141,109 @@ public class ArticleFacadeREST extends AbstractFacade<Article> {
 
 
 
-    // POST /rest/api/v1/article
-    @POST
-    @Secured  // Asegura que solo los usuarios autenticados pueden crear artículos
-    @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-    public Response createArticle(Article article, @HeaderParam("Authorization") String authorization) {
-        
-        // Valida el encabezado de autorización (puedes personalizar esta validación)
-        if (authorization == null || authorization.isEmpty()) {
-            return Response.status(Response.Status.FORBIDDEN).entity("Authorization header is missing").build();
-        }
-        // Validar que los topics sean válidos y el autor exista
-        if (article.getTopics().size() > 2) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Los artículos pueden tener hasta dos temas").build();
-        }
-
-        // Validar si los tópicos existen en la base de datos y asociarlos
-        List<Topic> validTopics = new ArrayList<>();
-        for (Topic topic : article.getTopics()) {
-            Topic existingTopic = em.find(Topic.class, topic.getId());
-            if (existingTopic == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity("Tópico no válido: " + topic.getName()).build();
-            }
-            validTopics.add(existingTopic);
-        }
-        article.setTopics(validTopics);  // Asociamos los tópicos válidos
-
-        // Establecer la fecha de publicación
-        article.setDatePublished(new java.util.Date());
-
-        // Llamamos al método create de la clase base AbstractFacade para persistir el artículo
-        super.create(article);  // Aquí no se sobrescribe el método, solo se llama
-
-        return Response.status(Response.Status.CREATED).entity(article.getId()).build();
+@POST
+@Secured // Asegura que solo los usuarios autenticados pueden crear artículos
+@Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+public Response createArticle(Article article, @HeaderParam("Authorization") String authorization) {
+    // Validar que Authorization esté presente
+    if (authorization == null || authorization.isEmpty()) {
+        return Response.status(Response.Status.FORBIDDEN).entity("Authorization header is missing").build();
     }
 
+    // Extraer username y password de la cabecera Authorization (Basic Auth)
+    String username;
+    String password;
+    try {
+        String auth = authorization.replace("Basic ", "");
+        String decodedAuth = new String(Base64.base64Decode(auth));
+        String[] credentials = decodedAuth.split(":");
+        username = credentials[0];
+        password = credentials[1];
+    } catch (Exception e) {
+        return Response.status(Response.Status.BAD_REQUEST).entity("Invalid authentication format").build();
+    }
+
+    // Verificar si el usuario autenticado es el mismo que el del artículo
+    if (!article.getAuthorName().equals(username)) {
+        return Response.status(Response.Status.FORBIDDEN).entity("Authenticated user does not match the article author").build();
+    }
+
+    // Validar que los topics sean válidos
+    if (article.getTopics() == null || article.getTopics().isEmpty()) {
+        return Response.status(Response.Status.BAD_REQUEST).entity("El artículo debe tener al menos un tópico.").build();
+    }
+
+    if (article.getTopics().size() > 2) {
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Los artículos pueden tener hasta dos temas").build();
+    }
+
+Set<Long> uniqueTopicIds = new HashSet<>(); // Para evitar duplicados por ID
+    Set<String> uniqueTopicNames = new HashSet<>(); // Para evitar duplicados por nombre
+    List<Topic> validTopics = new ArrayList<>();
+
+    for (Topic topic : article.getTopics()) {
+        // Verificar si el nombre del tópico existe en la base de datos
+        TypedQuery<Topic> query = em.createQuery("SELECT t FROM Topic t WHERE t.name = :name", Topic.class);
+        query.setParameter("name", topic.getName());
+
+        Topic existingTopic = null;
+        try {
+            existingTopic = query.getSingleResult();
+        } catch (NoResultException e) {
+            // Si no se encuentra un tópico con ese nombre, se lanza la excepción y retornamos un error
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Tópico no válido: " + topic.getName()).build();
+        }
+
+        /* Validar duplicados por ID (no permitir que el mismo tópico se repita por ID)
+        if (!uniqueTopicIds.add(existingTopic.getId())) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Tópico duplicado por ID: " + topic.getName()).build();
+        }*/
+
+        // Validar duplicados por nombre (no permitir que el mismo nombre se repita dentro del artículo)
+        if (!uniqueTopicNames.add(topic.getName())) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Tópico duplicado por nombre: " + topic.getName()).build();
+        }
+
+        // Agregar el tópico válido a la lista
+        validTopics.add(existingTopic);
+    }
+
+    article.setTopics(validTopics); // Asociamos los tópicos válidos
+
+    // Validar si el autor existe en la base de datos
+    Customer existingCustomer = em.createNamedQuery("Credentials.findUser", Credentials.class)
+            .setParameter("username", username) // Buscar el autor por username
+            .getResultList()
+            .stream()
+            .map(Credentials::getCustomer) // Obtener el Customer asociado
+            .findFirst()
+            .orElse(null);
+
+    if (existingCustomer == null) {
+        return Response.status(Response.Status.NOT_FOUND)
+                .entity("El autor con el username proporcionado no existe.").build();
+    }
+
+    // Asociar el autor al artículo
+    article.setAuthor(existingCustomer);
+
+    // Establecer la fecha de publicación
+    article.setDatePublished(new java.util.Date());
+
+    // Persistir el artículo en la base de datos
+    super.create(article);
+
+    // Devolver la respuesta con el ID del artículo creado
+    return Response.status(Response.Status.CREATED).entity(article.getId()).build();
+}
+
+
+
+    
     @Override
     protected EntityManager getEntityManager() {
         return em;
